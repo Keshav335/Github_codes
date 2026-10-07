@@ -1,0 +1,112 @@
+Given a string s that contains parentheses and letters, remove the minimum number of invalid parentheses to make the input string valid.
+
+Return a list of unique strings that are valid with the minimum number of removals. You may return the answer in any order.
+Example 1:
+Input: s = "()())()"
+Output: ["(())()","()()()"]
+Example 2:
+Input: s = "(a)())()"
+Output: ["(a())()","(a)()()"]
+Example 3:
+Input: s = ")("
+Output: [""] 
+
+Constraints:
+1 <= s.length <= 25
+s consists of lowercase English letters and parentheses '(' and ')'.
+There will be at most 20 parentheses in s.
+
+Hint 1
+Since we do not know which brackets can be removed, we try all the options! We can use recursion.
+Hint 2
+In the recursion, for each bracket, we can either use it or remove it.
+Hint 3
+Recursion will generate all the valid parentheses strings but we want the ones with the least number of parentheses deleted.
+Hint 4
+We can count the number of invalid brackets to be deleted and only generate the valid strings in the recusrion.
+
+=================================================================================================================================================================================================================
+class Solution {
+    vector<string> ans;
+
+    void dfs(string s, int start, int last, char open, char close){
+        int balance = 0;
+
+        for(int i = start; i<s.size(); i++){
+            if(s[i] == open) balance++;
+            if(s[i] == close) balance--;
+
+            if(balance >= 0) continue;
+
+            for(int j = last; j<=i; j++){
+                if(s[j] == close && (j==last || s[j-1] != close)){
+                    dfs(s.substr(0, j) + s.substr(j+1), i, j, open, close);
+                }
+            }
+
+            return;
+        }
+
+        reverse(s.begin(), s.end());
+
+        if(open=='('){
+            dfs(s, 0, 0, ')', '(');
+        }else{
+            ans.push_back(s);
+        }
+    }
+public:
+    vector<string> removeInvalidParentheses(string s) {
+        dfs(s, 0, 0, '(', ')');
+        return ans;
+    }
+};
+==============================================================================================================================================================================================================
+class Solution {
+public:
+    vector<string> removeInvalidParentheses(string s) {
+        // Step 1: count how many '(' and ')' must be removed
+        int left = 0, right = 0;
+        for (char c : s) {
+            if (c == '(') left++;
+            else if (c == ')') {
+                if (left > 0) left--;
+                else right++;
+            }
+        }
+
+        unordered_set<string> result; // handles duplicates
+        string path;
+        dfs(s, 0, path, 0, left, right, result);
+        return vector<string>(result.begin(), result.end());
+    }
+
+private:
+    void dfs(const string& s, int i, string& path, int open,
+             int left, int right, unordered_set<string>& result) {
+        // prune: over-deleted, or balance went negative
+        if (left < 0 || right < 0 || open < 0) return;
+
+        if (i == (int)s.size()) {
+            if (left == 0 && right == 0 && open == 0) result.insert(path);
+            return;
+        }
+
+        char c = s[i];
+        if (c == '(') {
+            dfs(s, i + 1, path, open, left - 1, right, result);   // remove it
+            path.push_back(c);                                     // keep it
+            dfs(s, i + 1, path, open + 1, left, right, result);
+            path.pop_back();
+        } else if (c == ')') {
+            dfs(s, i + 1, path, open, left, right - 1, result);   // remove it
+            path.push_back(c);                                     // keep it
+            dfs(s, i + 1, path, open - 1, left, right, result);
+            path.pop_back();
+        } else {
+            path.push_back(c);                                     // letters always kept
+            dfs(s, i + 1, path, open, left, right, result);
+            path.pop_back();
+        }
+    }
+};
